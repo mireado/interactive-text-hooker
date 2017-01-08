@@ -1873,13 +1873,25 @@ void ProcessWindow::RefreshThreadColumns(DWORD pid)
 	if (status == 0) return;
 
 	SYSTEM_THREAD* base = (SYSTEM_THREAD*)((DWORD)spiProcessInfo + sizeof(SYSTEM_PROCESS_INFORMATION));
-	DWORD dwLimit = (DWORD)spiProcessInfo -> usName.Buffer;
-	//int i = 0;
-	while ((DWORD)base < dwLimit)
+	DWORD dwLimit; // = (DWORD)spiProcessInfo -> usName.Buffer;
+
+	/* so much fail on Windows 10 in this section */
+
+	//while ((DWORD)base < dwLimit)
+	for (dwLimit = spiProcessInfo -> dThreadCount; dwLimit > 0; dwLimit--)
 	{
 		PerformThread(base);
-		LPWSTR state= (base -> dThreadState == StateWait)?				
-			WaitReasonString[base -> WaitReason] : StateString[base -> dThreadState];
+		LPWSTR state = L"???";
+		if (base -> dThreadState == StateWait)
+		{
+			if (base -> WaitReason < (sizeof(WaitReasonString) / sizeof(WaitReasonString[0])))
+				state = WaitReasonString[base -> WaitReason];
+		}
+		else
+		{
+			if (base -> dThreadState >= 0 && base->dThreadState < (sizeof(StateString) / sizeof(StateString[0])))
+				state = StateString[base -> dThreadState];
+		}
 		ListView_SetItemText(hlThread, 0, 3, state);
 		base++;
 		//i++;
